@@ -1,75 +1,81 @@
-const express = require('express')
-const app = express()
-const { MongoClient } = require('mongodb')
-const { generateid } = require('./generateid/generateid')
-const { Schedule } = require('./schedule/schedule')
-const { currentWeek } = require('./schedule/currentWeek')
-const uri = process.env.DB_URI
-const DB_NAME = process.env.DB_NAME
-const COLLECTION_NAME = process.env.COLLECTION_NAME
+const express = require('express');
+const { MongoClient } = require('mongodb');
+const { generateid } = require('./generateid/generateid');
+const { Schedule } = require('./schedule/schedule');
+const { currentWeek } = require('./schedule/currentWeek');
 
+const app = express();
+const PORT = process.env.PORT || 3000;
+const uri = process.env.DB_URI;
+const DB_NAME = process.env.DB_NAME;
+const COLLECTION_NAME = process.env.COLLECTION_NAME;
+
+let db;
+
+// Middleware to ensure database connection
+app.use((req, res, next) => {
+  if (!db) {
+    return res.status(500).send('Failed to connect to the database');
+  }
+  
+  req.db = db.collection(COLLECTION_NAME);
+  next();
+});
+
+app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-app.post('/submit', async(req, res) => {
-  const client = new MongoClient(uri)
+app.post('/submit', async (req, res) => {
   try {
-
-    await client.connect()
-    const database = client.db(DB_NAME)
-    const collection = database.collection(COLLECTION_NAME)
-
-    //  Generate random id, checking if id already exists
-
-    let randomID
+    let randomID;
     let existingDoc;
     do {
-      randomID = generateid()
-      existingDoc = await collection.findOne({ _id:randomID })
-    } while (existingDoc)
+      randomID = generateid();
+      existingDoc = await req.db.findOne({ _id: randomID });
+    } while (existingDoc);
 
-    const scheduleObj = new Schedule(randomID, currentWeek())
+    const scheduleObj = new Schedule(randomID, currentWeek());
 
-    await collection.insertOne({ _id:randomID, ...scheduleObj})
+    await req.db.insertOne({ _id: randomID, ...scheduleObj });
     res.json({ success: true, randomID });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('An error has occurred');
   }
-  catch (err) {
-    console.log(err)
-    res.status(500).send('An error has occured')
-  }
-  finally {
-    client.close()
-  }
-})
+});
 
-app.get('/schedules/:id', async(req, res) => {
-  const client = new MongoClient(uri)
-
+app.get('/schedules/:id', async (req, res) => {
   try {
-    await client.connect()
-    const database = client.db(DB_NAME)
-    const collection = database.collection(COLLECTION_NAME)
-
-
-    const id = req.params.id
-    const schedule = await collection.findOne({ _id:id })
+    const id = req.params.id;
+    const schedule = await req.db.findOne({ _id: id });
 
     if (schedule) {
-      res.json(schedule)
+      res.json(schedule);
+    } else {
+      res.status(404).send('Schedule not found');
     }
-    else {
-      res.status(404).send('Schedule not found')
-    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('An error has occurred');
   }
-  catch(err) {
-    console.log(err)
-    res.status(500).send('An error has occured')
-  }
-  finally {
-    client.close()
-  }
-
-})
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server started on http://localhost:${PORT}`);
 });
+
+const startServer = async () => {
+  try {
+    const client = await MongoClient.connect(uri, { 
+      useNewUrlParser: true, 
+      useUnifiedTopology: true, 
+      poolSize: 10 // adjust the pool size according to your needs
+    });
+    db = client.db(DB_NAME);
+
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server started on http://localhost:${PORT}`);
+    });
+
+  } catch (err) {
+    console.error('Failed to connect to database:', err);
+  }
+}
+
+startServer();
