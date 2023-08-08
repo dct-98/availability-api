@@ -15,7 +15,7 @@ let db;
 // Middleware to ensure database connection
 app.use((req, res, next) => {
   if (!db) {
-    return res.status(500).send('Failed to connect to the database');
+    return res.status(500).json({ error: 'Failed to connect to the database' });
   }
   
   req.db = db.collection(COLLECTION_NAME);
@@ -25,7 +25,8 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-app.post('/submit', async (req, res) => {
+// POST endpoint to create a schedule
+app.post('/schedules', async (req, res) => {
   try {
     let randomID;
     let existingDoc;
@@ -37,13 +38,14 @@ app.post('/submit', async (req, res) => {
     const scheduleObj = new Schedule(randomID, currentWeek());
 
     await req.db.insertOne({ _id: randomID, ...scheduleObj });
-    res.json({ success: true, randomID });
+    res.status(201).json({ success: true, randomID }); // 201 means "Created"
   } catch (err) {
     console.error(err);
-    res.status(500).send('An error has occurred');
+    res.status(500).json({ error: 'An error has occurred' });
   }
 });
 
+// GET endpoint to retrieve a specific schedule by ID
 app.get('/schedules/:id', async (req, res) => {
   try {
     const id = req.params.id;
@@ -52,11 +54,11 @@ app.get('/schedules/:id', async (req, res) => {
     if (schedule) {
       res.json(schedule);
     } else {
-      res.status(404).send('Schedule not found');
+      res.status(404).json({ error: 'Schedule not found' }); // 404 means "Not Found"
     }
   } catch (err) {
     console.error(err);
-    res.status(500).send('An error has occurred');
+    res.status(500).json({ error: 'An error has occurred' });
   }
 });
 
