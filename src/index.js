@@ -7,7 +7,7 @@ const { currentWeek } = require('./schedule/currentWeek');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const uri = process.env.DB_URI;
-const COLLECTION_NAME = process.env.COLLECTION_NAME;
+const collectionName = process.env.COLLECTION_NAME;
 
 let db;
 
@@ -17,7 +17,7 @@ app.use((req, res, next) => {
     return res.status(500).json({ error: 'Failed to connect to the database' });
   }
   
-  req.db = db.collection(COLLECTION_NAME);
+  req.db = db.collection(collectionName);
   next();
 });
 
