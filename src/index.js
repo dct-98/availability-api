@@ -7,7 +7,6 @@ const { currentWeek } = require('./schedule/currentWeek');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const uri = process.env.DB_URI;
-const DB_NAME = process.env.DB_NAME;
 const COLLECTION_NAME = process.env.COLLECTION_NAME;
 
 let db;
@@ -68,7 +67,7 @@ const startServer = async () => {
       useNewUrlParser: true, 
       useUnifiedTopology: true, 
     });
-    db = client.db(DB_NAME);
+    db = client.db(); // The database name is inferred from the connection URI
 
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server started on http://localhost:${PORT}`);
