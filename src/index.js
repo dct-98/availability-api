@@ -47,7 +47,10 @@ app.post('/schedules', async (req, res) => {
       existingDoc = await req.db.findOne({ _id: randomID });
     } while (existingDoc);
 
-    const scheduleObj = new Schedule(randomID, currentWeek());
+    const scheduleObj = new Schedule(randomID);
+    
+    // Update the available days based on the remaining days of the week.
+    scheduleObj.daysRemaining(currentWeek());
 
     await req.db.insertOne({ _id: randomID, ...scheduleObj });
     res.status(201).json({ success: true, randomID }); // 201 means "Created"
