@@ -67,7 +67,6 @@ const startServer = async () => {
     const client = await MongoClient.connect(uri, { 
       useNewUrlParser: true, 
       useUnifiedTopology: true, 
-      poolSize: 10 // adjust the pool size according to your needs
     });
     db = client.db(DB_NAME);
 
