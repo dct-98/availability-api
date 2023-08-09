@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const { MongoClient } = require('mongodb');
 const { generateid } = require('./generateid/generateid');
 const { Schedule } = require('./schedule/schedule');
@@ -8,6 +9,18 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const uri = process.env.DB_URI;
 const collectionName = process.env.COLLECTION_NAME;
+const allowedOrigins = ['http://localhost:5173', 'https://your-netlify-app-name.netlify.app'];
+
+app.use(cors({
+  origin: function (origin, callback) {
+      // If no origin or origin is in the list, allow it
+      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+          callback(null, true);
+      } else {
+          callback(new Error('Not allowed by CORS'));
+      }
+  }
+}));
 
 let db;
 
